@@ -46,20 +46,37 @@ const secondPromise = new Promise((resolve) => {
 });
 
 // THIRD PROMISE
-const thirdPromise = new Promise((resolve) => {
-  let leftClicked = false;
-  let rightClicked = false;
+const thirdPromise = new Promise((resolve, reject) => {
+  let lastClick = null;
+  let timeoutId = null;
 
   const handleClick = (e) => {
-    if (e.button === 0) {
-      leftClicked = true;
-    } else if (e.button === 2) {
-      rightClicked = true;
-    }
+    const now = Date.now();
 
-    if (leftClicked && rightClicked) {
-      resolve('Third promise was resolved');
-      document.removeEventListener('click', handleClick);
+    if (!lastClick) {
+      lastClick = { button: e.button, time: now };
+
+      // Reset if druga część nie nastąpi w 3 sekundy
+      timeoutId = setTimeout(() => {
+        lastClick = null;
+      }, 3000);
+    } else {
+      const timeDiff = now - lastClick.time;
+      const isOtherButton = lastClick.button !== e.button;
+
+      if (isOtherButton && timeDiff <= 3000) {
+        resolve('Third promise was resolved');
+        document.removeEventListener('click', handleClick);
+        clearTimeout(timeoutId);
+      } else {
+        // Reset logic — too slow or same button clicked again
+        lastClick = { button: e.button, time: now };
+        clearTimeout(timeoutId);
+
+        timeoutId = setTimeout(() => {
+          lastClick = null;
+        }, 3000);
+      }
     }
   };
 
